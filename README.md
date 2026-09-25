@@ -68,34 +68,72 @@ The production output is the `dist/` folder. That folder is the entire website.
 
 `vite.config.ts` sets `base: './'` so asset paths work on both user sites and project sites (`https://<user>.github.io/<repo>/`).
 
-### Option A — GitHub Actions (recommended)
+GitHub Pages is free for public repositories. The built site is just static files in `dist/`. No server, no paid plan, no env vars.
 
-1. Push this repository to GitHub.
-2. Repo **Settings → Pages**.
-3. Under **Build and deployment → Source**, choose **GitHub Actions**.
-4. Push to `main` (or run the **Deploy to GitHub Pages** workflow manually).
-5. Wait for the workflow to finish. The site URL appears on the workflow summary and under Settings → Pages.
-
-The workflow in `.github/workflows/deploy.yml` runs `npm ci`, `npm test`, `npm run build`, and publishes `dist/`.
-
-No secrets and no environment variables are required for the app itself.
-
-### Option B — Manual `docs/` folder
+### Fastest: deploy the `docs/` folder
 
 ```bash
 npm install
 npm run build
 rm -rf docs
-mv dist docs
+cp -R dist docs
 ```
 
-Commit `docs/`, then:
+Commit `docs/`, then in GitHub:
 
-1. Settings → Pages → Source: **Deploy from a branch**.
-2. Branch: `main` / folder: `/docs`.
-3. Save. The site will be at `https://<user>.github.io/<repo>/`.
+1. **Settings → Pages**
+2. Source: **Deploy from a branch**
+3. Branch: `main` (or this branch) / folder: **/docs**
+4. Save
 
-`public/.nojekyll` is included so GitHub Pages does not ignore files that start with an underscore.
+The site is `https://<user>.github.io/<repo>/`.
+
+`public/.nojekyll` is copied into the build so Pages does not ignore generated files.
+
+### Optional: GitHub Actions
+
+If you want Pages to build on every push, create `.github/workflows/deploy.yml` in the GitHub UI (Actions permission required) with:
+
+```yaml
+name: Deploy to GitHub Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+```
+
+Then Settings → Pages → Source: **GitHub Actions**.
 
 ## Usage
 
