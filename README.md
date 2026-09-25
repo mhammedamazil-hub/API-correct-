@@ -70,7 +70,18 @@ The production output is the `dist/` folder. That folder is the entire website.
 
 GitHub Pages is free for public repositories. The built site is just static files in `dist/`. No server, no paid plan, no env vars.
 
-### Fastest: deploy the `docs/` folder
+### Fastest: the `docs/` folder is already in the repo
+
+After this branch is merged, you only:
+
+1. Open the repo **Settings → Pages**
+2. Source: **Deploy from a branch**
+3. Branch: **main** / folder: **/docs**
+4. Save
+
+The site is `https://<user>.github.io/<repo>/`. GitHub Pages is free for public repos. Wait 1–2 minutes after saving.
+
+To refresh the hosted files later:
 
 ```bash
 npm install
@@ -78,15 +89,6 @@ npm run build
 rm -rf docs
 cp -R dist docs
 ```
-
-Commit `docs/`, then in GitHub:
-
-1. **Settings → Pages**
-2. Source: **Deploy from a branch**
-3. Branch: `main` (or this branch) / folder: **/docs**
-4. Save
-
-The site is `https://<user>.github.io/<repo>/`.
 
 `public/.nojekyll` is copied into the build so Pages does not ignore generated files.
 
