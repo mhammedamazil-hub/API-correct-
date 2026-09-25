@@ -1,1 +1,143 @@
-# API-correct-
+# API Correct
+
+A **100% frontend-only** authorized API key checker. It is a static Vite + React app. There is **no backend, no database, no proxy, no serverless function, and no environment variables**.
+
+That is why it **deploys for free on GitHub Pages**.
+
+> Only test API credentials that you own or are explicitly authorized to test.
+
+## What it does
+
+1. You drop a `.txt` file with one key per line.
+2. The file is read **in the browser** with `File.text()`. It is never uploaded to this project.
+3. Duplicate keys are checked once. Original line numbers are kept.
+4. Each unique key is tested against the **official provider API** with the smallest auth request (list models / check key). No chat completions are generated.
+5. **VALID** is shown only after a real HTTP 2xx from that provider.
+6. CORS or network failures are **never** reported as invalid.
+
+## Providers
+
+| Provider | Test request |
+| --- | --- |
+| OpenAI | `GET https://api.openai.com/v1/models` |
+| Google Gemini | `GET https://generativelanguage.googleapis.com/v1beta/models` (`x-goog-api-key` header, never `?key=`) |
+| Anthropic | `GET https://api.anthropic.com/v1/models` + `anthropic-dangerous-direct-browser-access: true` |
+| Groq | `GET https://api.groq.com/openai/v1/models` |
+| OpenRouter | `GET https://openrouter.ai/api/v1/key` |
+| Mistral | `GET https://api.mistral.ai/v1/models` |
+| Cohere | `POST https://api.cohere.com/v1/check-api-key` |
+| Together AI | `GET https://api.together.ai/v1/models` |
+
+## Browser / CORS limitation
+
+This is a genuine checker, not a demo. The request is a real `fetch()` from your browser to the provider.
+
+Some providers do not send CORS headers to random origins. When the browser blocks the response, the row is marked:
+
+**BROWSER BLOCKED — This provider cannot be verified directly from a static frontend.**
+
+That is **not** INVALID. This project will not add a proxy to bypass CORS, because a proxy would be a backend.
+
+## Security
+
+- No analytics, Sentry, or telemetry.
+- Keys are not written to `localStorage`, URLs, or console logs.
+- Full keys stay in RAM until you click **Show full key** or **Clear everything**.
+- Theme preference is the only thing stored locally.
+
+## Local development
+
+Requires Node 18+.
+
+```bash
+npm install
+npm test
+npm run dev
+```
+
+Open the printed local URL. For a production build:
+
+```bash
+npm run build
+npm run preview
+```
+
+The production output is the `dist/` folder. That folder is the entire website.
+
+## Deploy to GitHub Pages (free)
+
+`vite.config.ts` sets `base: './'` so asset paths work on both user sites and project sites (`https://<user>.github.io/<repo>/`).
+
+### Option A — GitHub Actions (recommended)
+
+1. Push this repository to GitHub.
+2. Repo **Settings → Pages**.
+3. Under **Build and deployment → Source**, choose **GitHub Actions**.
+4. Push to `main` (or run the **Deploy to GitHub Pages** workflow manually).
+5. Wait for the workflow to finish. The site URL appears on the workflow summary and under Settings → Pages.
+
+The workflow in `.github/workflows/deploy.yml` runs `npm ci`, `npm test`, `npm run build`, and publishes `dist/`.
+
+No secrets and no environment variables are required for the app itself.
+
+### Option B — Manual `docs/` folder
+
+```bash
+npm install
+npm run build
+rm -rf docs
+mv dist docs
+```
+
+Commit `docs/`, then:
+
+1. Settings → Pages → Source: **Deploy from a branch**.
+2. Branch: `main` / folder: `/docs`.
+3. Save. The site will be at `https://<user>.github.io/<repo>/`.
+
+`public/.nojekyll` is included so GitHub Pages does not ignore files that start with an underscore.
+
+## Usage
+
+1. Confirm you are authorized to test the keys.
+2. Upload a UTF-8 `.txt` file:
+
+```text
+# comments and blank lines are ignored
+sk-key-from-line-2
+sk-key-from-line-3
+sk-key-from-line-2
+```
+
+Line 4 is a duplicate of line 2. It is not sent twice; it inherits line 2’s result.
+
+3. Pick a provider, set concurrency (1–8), and click **Start checking**.
+4. Pause, resume, or stop at any time. Stop cancels remaining requests.
+5. Click a row → **Show full key** → Copy or Hide.
+6. Export CSV / JSON / valid keys.
+
+## Architecture
+
+```text
+src/
+  providers/     one adapter per vendor
+  engine/        concurrency, pause/resume/stop, retries
+  lib/           parser, classifier, mask, export
+  components/    UI
+  hooks/         checker state
+```
+
+Provider-specific URLs and headers live only under `src/providers/`.
+
+## Scripts
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Vite dev server |
+| `npm test` | Vitest |
+| `npm run build` | Typecheck + production build |
+| `npm run preview` | Serve `dist/` locally |
+
+## License
+
+MIT
